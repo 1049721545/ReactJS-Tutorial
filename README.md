@@ -1,6 +1,6 @@
-# Tic Tac Toe By J
+# Tic Tac Toe By 1049721545
 
-ReactJS basic practice.
+ReactJS basic practice base on [https://reactjs.org/tutorial/tutorial.html].
 
 ## Available Scripts
 
