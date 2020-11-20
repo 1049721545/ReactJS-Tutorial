@@ -1,148 +1,154 @@
-import React from "react";
-import ReactDOM from "react-dom";
+import React, { useEffect, useRef, useReducer } from "react";
+import { Container, Input, Button, Message } from "semantic-ui-react";
+import Board from "./Board";
+import WinnerModal from "./WinnerModel";
+import { useNewGame, useNextMove } from "./TicTacToeAPI";
+import ticTacToeReducer from "./TicTacToeReducer";
 
-function checkWinner(squares) {
-  const lines = [
-    [0, 1, 2],
-    [3, 4, 5],
-    [6, 7, 8],
-    [0, 3, 6],
-    [1, 4, 7],
-    [2, 5, 8],
-    [0, 4, 8],
-    [2, 4, 6],
-  ];
-  for (let i = 0; i < lines.length; i++) {
-    const [a, b, c] = lines[i];
-    if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
-      return squares[a];
+function TicTacToe() {
+  const [state, dispatch] = useReducer(ticTacToeReducer, {
+    player: 1,
+    size: 5,
+    board: new Array(25),
+    isStart: false,
+    isOver: false,
+    isError: false,
+    isLoading: false,
+  });
+
+  const [game, setGame] = useNewGame(null);
+  const [move, setMove] = useNextMove(null);
+
+  const inputSize = useRef(null);
+
+  useEffect(() => {
+    if (game.isError || move.isError) {
+      dispatch({ type: "GAME_ERROR" });
     }
-  }
-  return null;
-}
 
-function Square(props) {
+    if (move.data === 1 || move.data === 2) {
+      dispatch({ type: "GAME_OVER" });
+      move.data = 0;
+    }
+  }, [game, move, state.size]);
+
+  function handleClick(id) {
+    let newBoard = state.board.slice();
+    if (newBoard[id] === "x" || newBoard[id] === "o") {
+      return;
+    }
+
+    newBoard[id] = state.player === 1 ? "x" : "o";
+
+    placeNewMove(id);
+
+    dispatch({
+      type: "GAME_MOVE",
+      payload: {
+        player: state.player === 1 ? 2 : 1,
+        board: newBoard,
+      },
+    });
+  }
+
+  function placeNewMove(id) {
+    const row = (id / state.size) >> 0;
+    const col = id % state.size;
+
+    const newMove = {
+      row: row,
+      col: col,
+      player: state.player,
+    };
+
+    setMove(newMove);
+  }
+
+  function handleModalClose() {
+    dispatch({ type: "GAME_NOPE" });
+  }
+
+  function handleModalNewGame() {
+    setGame({ size: state.size, board: [] });
+
+    dispatch({ type: "GAME_INIT" });
+  }
+
+  function handleDismiss() {
+    dispatch({ type: "" });
+  }
+
+  function handleStartGame() {
+    setGame({ size: state.size, board: [] });
+
+    dispatch({ type: "GAME_INIT" });
+  }
+
+  function handleSizeChange(e, { value }) {
+    const size = parseInt(value, 10);
+    if (isNaN(size)) {
+      return;
+    }
+
+    dispatch({ type: "GAME_SIZE", payload: { size: size } });
+  }
+
   return (
-    <button
-      className="square"
-      onClick={() => {
-        props.onClick();
-      }}
-    >
-      {props.value}
-    </button>
+    <div>
+      {state.isOver && (
+        <WinnerModal
+          open={state.isOver}
+          onClose={handleModalClose}
+          onNewGame={handleModalNewGame}
+        />
+      )}
+
+      {state.isError && (
+        <Message
+          onDismiss={handleDismiss}
+          header="Error"
+          content="There is something wrong."
+        />
+      )}
+
+      {!state.isStart && (
+        <Container textAlign="center">
+          <Input
+            floated="right"
+            ref={inputSize}
+            type="text"
+            placeholder="Board Size..."
+            action
+            defaultValue={state.size}
+            onChange={handleSizeChange}
+          >
+            <input />
+            <Button
+              floated="right"
+              type="submit"
+              onClick={handleStartGame}
+              color="teal"
+            >
+              Let's Play
+            </Button>
+          </Input>
+        </Container>
+      )}
+
+      {state.isStart && (
+        <div>
+          <Container textAlign="center">
+            Current Player: {state.player}{" "}
+          </Container>
+          <Board
+            board={state.board}
+            size={state.size}
+            onClick={(id) => handleClick(id)}
+          />
+        </div>
+      )}
+    </div>
   );
 }
 
-class Board extends React.Component {
-  renderSquare(i) {
-    return (
-      <Square
-        value={this.props.squares[i]}
-        onClick={() => this.props.onClick(i)}
-      />
-    );
-  }
-
-  render() {
-    return (
-      <div>
-        <div className="board-row">
-          {this.renderSquare(0)}
-          {this.renderSquare(1)}
-          {this.renderSquare(2)}
-        </div>
-        <div className="board-row">
-          {this.renderSquare(3)}
-          {this.renderSquare(4)}
-          {this.renderSquare(5)}
-        </div>
-        <div className="board-row">
-          {this.renderSquare(6)}
-          {this.renderSquare(7)}
-          {this.renderSquare(8)}
-        </div>
-      </div>
-    );
-  }
-}
-
-class Game extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      history: [
-        {
-          squares: Array(9).fill(null),
-        },
-      ],
-      stepNumber: 0,
-      xIsNext: true,
-    };
-  }
-
-  handleClick(i) {
-    const history = this.state.history.slice(0, this.state.stepNumber + 1);
-    const current = history[history.length - 1];
-    const squares = current.squares.slice();
-    if (checkWinner(squares) || squares[i]) {
-      return;
-    }
-    squares[i] = this.state.xIsNext ? "X" : "O";
-    this.setState({
-      history: history.concat([
-        {
-          squares: squares,
-        },
-      ]),
-      stepNumber: history.length,
-      xIsNext: !this.state.xIsNext,
-    });
-  }
-
-  jumpTo(step) {
-    this.setState({
-      stepNumber: step,
-      xIsNext: step % 2 === 0,
-    });
-  }
-
-  render() {
-    const history = this.state.history;
-    const current = history[this.state.stepNumber];
-    const winner = checkWinner(current.squares);
-
-    const moves = history.map((step, move) => {
-      const desc = move ? "Go to move #" + move : "Go to start";
-      return (
-        <li key={move}>
-          <button onClick={() => this.jumpTo(move)}>{desc}</button>
-        </li>
-      );
-    });
-
-    let status;
-    if (winner) {
-      status = "'" + winner + "'" + " You won this game";
-    } else {
-      status = "Next player: " + (this.state.xIsNext ? "X" : "O");
-    }
-
-    return (
-      <div className="game">
-        <div className="game-board">
-          <Board
-            squares={current.squares}
-            onClick={(i) => this.handleClick(i)}
-          />
-        </div>
-        <div className="game-info">
-          <div>{status}</div>
-          <ol>{moves}</ol>
-        </div>
-      </div>
-    );
-  }
-}
-
-export default Game;
+export default TicTacToe;
