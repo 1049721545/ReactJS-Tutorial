@@ -9,8 +9,8 @@ export default function NavBar() {
   }
 
   return (
-    <Segment inverted color="teal">
-      <Menu secondary stackable inverted color="teal">
+    <Segment inverted color="purple">
+      <Menu secondary stackable inverted color="purple">
         <Menu.Item
           name="Home"
           active={activeItem === "Home"}
