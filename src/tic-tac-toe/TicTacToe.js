@@ -8,8 +8,8 @@ import ticTacToeReducer from "./TicTacToeReducer";
 function TicTacToe() {
   const [state, dispatch] = useReducer(ticTacToeReducer, {
     player: 1,
-    size: 5,
-    board: new Array(25),
+    size: 3,
+    board: new Array(9),
     isStart: false,
     isOver: false,
     isError: false,
