@@ -1,0 +1,37 @@
+import React from "react";
+import { Container, Grid } from "semantic-ui-react";
+import _ from "lodash";
+import Square from "./Square";
+
+function Board(props) {
+  const rows = _.times(props.size, (row) => (
+    <Grid.Row columns={props.size}>{cols(row)}</Grid.Row>
+  ));
+
+  function cols(row) {
+    const items = [];
+
+    for (let col = 0; col < props.size; col++) {
+      let id = row * props.size + col;
+
+      items.push(
+        <Grid.Column width={1}>
+          <Square
+            value={props.board && props.board[id]}
+            onClick={() => props.onClick(id)}
+          />
+        </Grid.Column>
+      );
+    }
+
+    return items;
+  }
+
+  return (
+    <Container style={{ margin: 10 }}>
+      <Grid centered>{rows}</Grid>
+    </Container>
+  );
+}
+
+export default Board;
